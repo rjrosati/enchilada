@@ -666,7 +666,13 @@ class L1Data:
     # ---- readers ----------------------------------------------------------
 
     @classmethod
-    def from_cd1l(cls, file_path: str, *, duration_s: float | None = None) -> "L1Data":
+    def from_cd1l(
+        cls,
+        file_path: str,
+        *,
+        duration_s: float | None = None,
+        load_ttl: bool = False,
+    ) -> "L1Data":
         """Read a Mojito CD1-L brick: X, Y, Z TDI-2 with its raw orbit tables.
 
         Channels are ``tdis/X2``, ``Y2`` and ``Z2`` divided by the file's
@@ -677,12 +683,13 @@ class L1Data:
         equatorial metres and metres per second) with ``orbits/sampling``; and
         ``ltts/ltt_ij`` in `LINKS` order with ``ltts/sampling``. Light travel
         times are cut to the samples covering the data read, plus one. The
-        tables are the only orbit representation. Optional ltt_derivative_ij,
-        scet_wrt_tcb/scet_wrt_tcb_i, and ttl/ttl_coefficients/c_* tables are
-        also loaded unchanged and read-only. Clock and TTL sampling are separate;
-        these tables are cut to the data span plus one sample as for ltts.
-        Missing optional groups leave fields None; incomplete groups raise.
-        TTL tables can be very large; duration_s limits the loaded prefix.
+        tables are the only orbit representation. Optional ltt_derivative_ij
+        and scet_wrt_tcb/scet_wrt_tcb_i tables, and ttl/ttl_coefficients/c_*
+        when ``load_ttl`` is set, are also loaded unchanged and read-only. Clock
+        and TTL sampling are separate; these tables are cut to the data span
+        plus one sample as for ltts. Missing optional groups leave fields None;
+        incomplete groups raise. TTL tables are skipped by default: the 24 of
+        them hold ten samples per data sample, about 25 GB for a year of data.
         Only noise_estimates/XYZ is loaded; AET and eta are skipped.
         Noise estimates retain their complex values, source units, and independent
         time/log-frequency sampling; duration_s limits their time prefix, keeping
@@ -694,6 +701,8 @@ class L1Data:
             file_path: Path to the CD1-L HDF5 file.
             duration_s: Read only the first ``ceil(duration_s * fs)`` samples;
                 None reads the whole brick.
+            load_ttl: Also load ``ttl/ttl_coefficients``; otherwise the TTL
+                fields stay None.
         """
         import h5py  # optional: the cd1l extra
 
@@ -801,7 +810,7 @@ class L1Data:
                     TTL_COEFFICIENT_NAMES,
                 ),
             ):
-                if group_path not in cd1l_file:
+                if group_path not in cd1l_file or (prefix == "ttl" and not load_ttl):
                     continue
                 group = cd1l_file[group_path]
                 sampling = group["sampling"].attrs

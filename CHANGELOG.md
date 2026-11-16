@@ -27,7 +27,9 @@ All notable changes to enchilada are documented here. The format follows
   and the 24 named Mojito TTL coefficient arrays on `L1Data`. Clock and TTL
   tables retain their own sampling metadata and must span the observations.
   `from_cd1l` loads these optional groups unchanged, with read-only arrays;
-  `duration_s` limits their loaded prefixes as well as the TDI data.
+  `duration_s` limits their loaded prefixes as well as the TDI data. TTL
+  coefficients are loaded only with `from_cd1l(..., load_ttl=True)`: they take
+  about 25 GB for a year of data.
 
 - `Wheel.add(initial_block_state=...)` starts a block from an explicit injection
   or other complete physical state without consuming campaign RNG draws. It uses the

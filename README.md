@@ -585,16 +585,18 @@ do the same for the clock and TTL grids. The tables pass
 through `replace`, `transform`, and Wheel by reference; blocks must treat them
 as immutable.
 
-`L1Data.from_cd1l(file_path, *, duration_s=None)` reads a Mojito CD1-L brick:
-`tdis/X2`, `Y2`, and `Z2` divided by the file's `laser_frequency` (fractional
-frequency, TDI 2.0), plus the `orbits` and `ltts` tables (including derivatives), clock offsets
-from `scet_wrt_tcb`, and `ttl/ttl_coefficients`, made read-only. With
-`duration_s` it reads the first `ceil(duration_s * fs)` samples and the light-travel-time, clock, and TTL prefixes covering them,
-including a following sample when available. Missing optional groups leave their
-fields `None`; incomplete derivative, clock, or TTL groups raise an error.
-TTL coefficients can dominate memory: 24 float64 arrays of 252,465,200 samples
-occupy about 48.5 GB alone in the local 731-day noise brick. Use `duration_s`
-to load a short prefix when working with these files.
+`L1Data.from_cd1l(file_path, *, duration_s=None, load_ttl=False)` reads a
+Mojito CD1-L brick: `tdis/X2`, `Y2`, and `Z2` divided by the file's
+`laser_frequency` (fractional frequency, TDI 2.0), plus the `orbits` and `ltts`
+tables (including derivatives) and clock offsets from `scet_wrt_tcb`, made
+read-only. With `duration_s` it reads the first `ceil(duration_s * fs)` samples
+and the light-travel-time, clock, and TTL prefixes covering them, including a
+following sample when available. Missing optional groups leave their fields
+`None`; incomplete derivative, clock, or TTL groups raise an error.
+`ttl/ttl_coefficients` is loaded only with `load_ttl=True`; by default the TTL
+fields stay `None`. TTL coefficients dominate memory: 24 float64 arrays of
+252,465,200 samples occupy about 48.5 GB in the local 731-day noise brick, and
+about 25 GB for a one-year prefix.
 
 ```python
 import numpy as np

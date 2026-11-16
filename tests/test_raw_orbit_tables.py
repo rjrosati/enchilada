@@ -380,7 +380,7 @@ def test_reads_auxiliary_tables_with_independent_sampling(tmp_path, duration_s):
     path = tmp_path / "brick.h5"
     write_cd1l(path)
     contents = add_auxiliary_groups(path)
-    data = L1Data.from_cd1l(str(path), duration_s=duration_s)
+    data = L1Data.from_cd1l(str(path), duration_s=duration_s, load_ttl=True)
     last = T0 + (data.N - 1) / FS
     assert data.light_travel_time_derivatives.shape == data.light_travel_times_s.shape
     for row, link in zip(data.light_travel_time_derivatives, LINKS, strict=True):
@@ -409,6 +409,19 @@ def test_reads_auxiliary_tables_with_independent_sampling(tmp_path, duration_s):
     assert not data.light_travel_time_derivatives.flags.writeable
 
 
+def test_ttl_tables_are_skipped_by_default(tmp_path):
+    path = tmp_path / "brick.h5"
+    write_cd1l(path)
+    add_auxiliary_groups(path)
+    data = L1Data.from_cd1l(str(path))
+    assert data.ttl_coefficients is None
+    assert data.ttl_start_time_gps is None
+    assert data.ttl_sample_interval_s is None
+    assert data.ttl_sample_times_gps is None
+    assert data.scet_wrt_tcb_s is not None
+    assert data.light_travel_time_derivatives is not None
+
+
 def test_missing_auxiliary_groups_are_optional(tmp_path):
     path = tmp_path / "brick.h5"
     write_cd1l(path)
@@ -434,7 +447,7 @@ def test_incomplete_auxiliary_groups_fail(tmp_path, missing):
     with h5py.File(path, "a") as f:
         del f[missing]
     with pytest.raises(KeyError):
-        L1Data.from_cd1l(str(path))
+        L1Data.from_cd1l(str(path), load_ttl=True)
 
 
 def test_invalid_auxiliary_file_sampling_fails(tmp_path):
@@ -446,7 +459,7 @@ def test_invalid_auxiliary_file_sampling_fails(tmp_path):
     with h5py.File(path, "a") as f:
         f["ttl/ttl_coefficients/sampling"].attrs["dt"] = 0.0
     with pytest.raises(ValueError, match="positive dt"):
-        L1Data.from_cd1l(str(path))
+        L1Data.from_cd1l(str(path), load_ttl=True)
 
 
 def noise_tables():
